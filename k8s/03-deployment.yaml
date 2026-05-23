@@ -1,0 +1,189 @@
+---
+# Deployment for Python Flask Application
+# Manages the application pods with rolling updates and health checks
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-app
+  namespace: production
+  labels:
+    app: python-app
+    version: v1
+    component: backend
+  annotations:
+    description: "Python Flask application deployment"
+    deployment.kubernetes.io/revision: "1"
+spec:
+  # Number of pod replicas
+  replicas: 2
+  
+  # Selector to match pods
+  selector:
+    matchLabels:
+      app: python-app
+      version: v1
+  
+  # Rolling update strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Maximum number of pods that can be created over the desired number
+      maxUnavailable: 0  # Maximum number of pods that can be unavailable during update
+  
+  # Minimum time for pod to be ready before considering it available
+  minReadySeconds: 10
+  
+  # Number of old ReplicaSets to retain for rollback
+  revisionHistoryLimit: 3
+  
+  # Pod template
+  template:
+    metadata:
+      labels:
+        app: python-app
+        version: v1
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      
+      # Service account for the pod
+      serviceAccountName: default
+      
+      # Container specification
+      containers:
+      - name: python-app
+        # Image will be updated by Jenkins pipeline
+        image: image-registry.openshift-image-registry.svc:5000/production/python-app:latest
+        imagePullPolicy: Always
+        
+        # Container ports
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        
+        # Environment variables from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: python-app-config
+        
+        # Environment variables from Secret
+        env:
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: python-app-secret
+              key: API_KEY
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: python-app-secret
+              key: DB_PASSWORD
+        - name: SECRET_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: python-app-secret
+              key: SECRET_TOKEN
+        
+        # Resource limits and requests
+        resources:
+          limits:
+            cpu: "500m"      # Maximum CPU (0.5 cores)
+            memory: "512Mi"  # Maximum memory
+          requests:
+            cpu: "250m"      # Minimum CPU (0.25 cores)
+            memory: "256Mi"  # Minimum memory
+        
+        # Liveness probe - checks if container is alive
+        # If this fails, Kubernetes will restart the container
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 30  # Wait 30s before first check
+          periodSeconds: 10        # Check every 10s
+          timeoutSeconds: 5        # Timeout after 5s
+          successThreshold: 1      # Consider healthy after 1 success
+          failureThreshold: 3      # Consider unhealthy after 3 failures
+        
+        # Readiness probe - checks if container is ready to serve traffic
+        # If this fails, pod is removed from service endpoints
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 10  # Wait 10s before first check
+          periodSeconds: 5         # Check every 5s
+          timeoutSeconds: 3        # Timeout after 3s
+          successThreshold: 1      # Consider ready after 1 success
+          failureThreshold: 3      # Consider not ready after 3 failures
+        
+        # Startup probe - checks if application has started
+        # Useful for slow-starting applications
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 30     # Allow up to 5 minutes for startup (30 * 10s)
+        
+        # Security context for the container
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+        
+        # Volume mounts (if needed)
+        # volumeMounts:
+        # - name: app-data
+        #   mountPath: /app/data
+      
+      # Volumes (if needed)
+      # volumes:
+      # - name: app-data
+      #   emptyDir: {}
+      
+      # Restart policy
+      restartPolicy: Always
+      
+      # DNS policy
+      dnsPolicy: ClusterFirst
+      
+      # Termination grace period
+      terminationGracePeriodSeconds: 30
+      
+      # Node affinity (optional - for production workloads)
+      # affinity:
+      #   podAntiAffinity:
+      #     preferredDuringSchedulingIgnoredDuringExecution:
+      #     - weight: 100
+      #       podAffinityTerm:
+      #         labelSelector:
+      #           matchExpressions:
+      #           - key: app
+      #             operator: In
+      #             values:
+      #             - python-app
+      #         topologyKey: kubernetes.io/hostname
+
+# Made with Bob

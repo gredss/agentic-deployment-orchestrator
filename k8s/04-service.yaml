@@ -1,0 +1,59 @@
+---
+# Service for Python Flask Application
+# Provides stable network endpoint for accessing the application pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: python-app
+  namespace: production
+  labels:
+    app: python-app
+    component: backend
+  annotations:
+    description: "Service for Python Flask application"
+    service.alpha.openshift.io/dependencies: '[{"name": "python-app", "kind": "Deployment"}]'
+spec:
+  # Service type - ClusterIP for internal access only
+  type: ClusterIP
+  
+  # Selector to match pods
+  selector:
+    app: python-app
+    version: v1
+  
+  # Service ports
+  ports:
+  - name: http
+    port: 8080           # Port exposed by the service
+    targetPort: 8080     # Port on the container
+    protocol: TCP
+  
+  # Session affinity (optional)
+  # sessionAffinity: ClientIP
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 10800
+
+---
+# Headless Service (optional)
+# Useful for StatefulSets or when you need direct pod access
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: python-app-headless
+#   namespace: production
+#   labels:
+#     app: python-app
+#     component: backend
+# spec:
+#   clusterIP: None
+#   selector:
+#     app: python-app
+#     version: v1
+#   ports:
+#   - name: http
+#     port: 8080
+#     targetPort: 8080
+#     protocol: TCP
+
+# Made with Bob

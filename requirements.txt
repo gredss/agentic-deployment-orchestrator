@@ -1,0 +1,8 @@
+# Flask web framework
+Flask==3.0.0
+
+# WSGI HTTP Server for production
+gunicorn==21.2.0
+
+# Additional dependencies for production readiness
+Werkzeug==3.0.1

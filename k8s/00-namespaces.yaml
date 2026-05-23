@@ -1,0 +1,29 @@
+---
+# Production Namespace
+# This namespace hosts the production deployment of the application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    name: production
+    environment: production
+    managed-by: jenkins
+  annotations:
+    description: "Production environment for Python Flask application"
+
+---
+# Development Namespace
+# This namespace is used for development and testing
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+  labels:
+    name: development
+    environment: development
+    managed-by: jenkins
+  annotations:
+    description: "Development environment for Python Flask application"
+
+# Made with Bob

@@ -1,0 +1,100 @@
+---
+# Route for Python Flask Application
+# OpenShift-specific resource for external access to the application
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: python-app
+  namespace: production
+  labels:
+    app: python-app
+    component: backend
+  annotations:
+    description: "External route for Python Flask application"
+    haproxy.router.openshift.io/timeout: "60s"
+    haproxy.router.openshift.io/balance: "roundrobin"
+spec:
+  # Hostname (optional - OpenShift will generate if not specified)
+  # host: python-app-production.apps.your-cluster.com
+  
+  # Target service
+  to:
+    kind: Service
+    name: python-app
+    weight: 100
+  
+  # Port to route to
+  port:
+    targetPort: http
+  
+  # TLS configuration for HTTPS
+  tls:
+    # Termination type: edge, passthrough, or reencrypt
+    termination: edge
+    # Redirect HTTP to HTTPS
+    insecureEdgeTerminationPolicy: Redirect
+  
+  # Wildcard policy
+  wildcardPolicy: None
+
+---
+# Alternative Route with custom hostname (commented out)
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: python-app-custom
+#   namespace: production
+#   labels:
+#     app: python-app
+#     component: backend
+# spec:
+#   host: myapp.example.com
+#   to:
+#     kind: Service
+#     name: python-app
+#     weight: 100
+#   port:
+#     targetPort: http
+#   tls:
+#     termination: edge
+#     insecureEdgeTerminationPolicy: Redirect
+#     # Custom certificate (optional)
+#     # certificate: |
+#     #   -----BEGIN CERTIFICATE-----
+#     #   ...
+#     #   -----END CERTIFICATE-----
+#     # key: |
+#     #   -----BEGIN PRIVATE KEY-----
+#     #   ...
+#     #   -----END PRIVATE KEY-----
+#     # caCertificate: |
+#     #   -----BEGIN CERTIFICATE-----
+#     #   ...
+#     #   -----END CERTIFICATE-----
+
+---
+# Route for Development Environment
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: python-app
+  namespace: development
+  labels:
+    app: python-app
+    component: backend
+    environment: development
+  annotations:
+    description: "Development route for Python Flask application"
+spec:
+  to:
+    kind: Service
+    name: python-app
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+# Made with Bob

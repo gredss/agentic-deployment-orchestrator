@@ -1,0 +1,142 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+.virtualenv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment variables & Secrets
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+*.env
+secrets.yaml
+secrets.yml
+*-secrets.yaml
+*-secrets.yml
+
+# Credentials & Tokens
+credentials.json
+credentials.yaml
+token.txt
+*.token
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+*.ppk
+
+# Jenkins
+.jenkins/
+jenkins-token.txt
+jenkins-credentials.txt
+
+# OpenShift & Kubernetes
+*.kubeconfig
+kubeconfig
+.kube/
+oc-login.sh
+openshift-token.txt
+sa-token.txt
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+*.old
+*~
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS specific
+Thumbs.db
+Desktop.ini
+
+# Sensitive configuration files
+config.local.yaml
+config.local.yml
+local-config.yaml
+local-config.yml
+
+# API Keys and sensitive data
+api-keys.txt
+api-keys.json
+*.apikey
+
+# SSH keys
+.ssh/
+ssh_config
+
+# Certificate files
+*.cer
+*.der
+
+# Private notes
+NOTES.md
+TODO.private.md
+private/
+
+# Made with Bob
