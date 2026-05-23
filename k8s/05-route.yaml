@@ -1,5 +1,5 @@
 ---
-# Route for Python Flask Application
+# Route for Python Flask Application (Production Only)
 # OpenShift-specific resource for external access to the application
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -35,66 +35,6 @@ spec:
     insecureEdgeTerminationPolicy: Redirect
   
   # Wildcard policy
-  wildcardPolicy: None
-
----
-# Alternative Route with custom hostname (commented out)
-# apiVersion: route.openshift.io/v1
-# kind: Route
-# metadata:
-#   name: python-app-custom
-#   namespace: production
-#   labels:
-#     app: python-app
-#     component: backend
-# spec:
-#   host: myapp.example.com
-#   to:
-#     kind: Service
-#     name: python-app
-#     weight: 100
-#   port:
-#     targetPort: http
-#   tls:
-#     termination: edge
-#     insecureEdgeTerminationPolicy: Redirect
-#     # Custom certificate (optional)
-#     # certificate: |
-#     #   -----BEGIN CERTIFICATE-----
-#     #   ...
-#     #   -----END CERTIFICATE-----
-#     # key: |
-#     #   -----BEGIN PRIVATE KEY-----
-#     #   ...
-#     #   -----END PRIVATE KEY-----
-#     # caCertificate: |
-#     #   -----BEGIN CERTIFICATE-----
-#     #   ...
-#     #   -----END CERTIFICATE-----
-
----
-# Route for Development Environment
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: python-app
-  namespace: development
-  labels:
-    app: python-app
-    component: backend
-    environment: development
-  annotations:
-    description: "Development route for Python Flask application"
-spec:
-  to:
-    kind: Service
-    name: python-app
-    weight: 100
-  port:
-    targetPort: http
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
 
 # Made with Bob
