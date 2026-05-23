@@ -1,24 +1,88 @@
-# OpenShift Clients
+# Agentic Deployment Orchestrator
 
-The OpenShift client `oc` simplifies working with Kubernetes and OpenShift
-clusters, offering a number of advantages over `kubectl` such as easy login,
-kube config file management, and access to developer tools. The `kubectl`
-binary is included alongside for when strict Kubernetes compliance is necessary.
+AI-driven CI/CD orchestration system using Slack, Bob (AI orchestrator), Jenkins, and OpenShift for automated Python application deployments.
 
-To learn more about OpenShift, visit [docs.openshift.com](https://docs.openshift.com)
-and select the version of OpenShift you are using.
+## Architecture
 
-## Installing the tools
+```
+Slack → Bob Orchestrator → Jenkins → OpenShift
+```
 
-After extracting this archive, move the `oc` and `kubectl` binaries
-to a location on your PATH such as `/usr/local/bin`. Then run:
+**Components:**
+- **Slack**: Human interaction layer for deployment commands
+- **Bob**: AI orchestrator that interprets requests and triggers Jenkins
+- **Jenkins**: CI/CD engine executing deployment pipelines
+- **OpenShift**: Container platform running the Python Flask application
 
-    oc login [API_URL]
+## Repository Structure
 
-to start a session against an OpenShift cluster. After login, run `oc` and
-`oc help` to learn more about how to get started with OpenShift.
+```
+├── app.py                    # Flask application
+├── requirements.txt          # Python dependencies
+├── Dockerfile               # Container image definition
+├── Jenkinsfile              # CI/CD pipeline
+├── k8s/                     # OpenShift manifests for Python app
+│   ├── 01-serviceaccount-rbac.yaml
+│   ├── 02-configmap-secret.yaml
+│   ├── 03-deployment-simple.yaml
+│   ├── 04-service.yaml
+│   └── 05-route.yaml
+└── bob/                     # Bob orchestrator
+    ├── orchestrator.py      # Flask webhook server
+    ├── requirements.txt
+    ├── Dockerfile
+    └── k8s/                 # OpenShift manifests for Bob
+        ├── deployment.yaml
+        ├── service.yaml
+        ├── route.yaml
+        └── secret.yaml
+```
 
-## License
+## Quick Start
 
-OpenShift is licensed under the Apache Public License 2.0. The source code for this
-program is [located on github](https://github.com/openshift/oc).
+### 1. Deploy Python Application
+```bash
+oc apply -f k8s/
+```
+
+### 2. Deploy Bob Orchestrator
+```bash
+# Create secret with Jenkins token
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bob-secrets
+  namespace: production
+stringData:
+  jenkins-token: "YOUR_JENKINS_TOKEN"
+EOF
+
+oc apply -f bob/k8s/
+```
+
+### 3. Trigger Deployment via Bob
+```bash
+curl -X POST https://bob-orchestrator-production.apps.../webhook \
+  -H "Content-Type: application/json" \
+  -d '{"text":"deploy to production"}'
+```
+
+## Application Endpoints
+
+- **Python App**: `https://python-app-production.apps.../`
+- **Health Check**: `https://python-app-production.apps.../health`
+- **Bob Webhook**: `https://bob-orchestrator-production.apps.../webhook`
+
+## Features
+
+- Event-driven deployment automation
+- AI-powered request interpretation
+- Zero-downtime rolling updates
+- Automated health checks
+- Slack integration ready
+- RBAC-secured deployments
+
+## Technologies
+
+Python 3.9 | Flask | Gunicorn | Jenkins | OpenShift | Kubernetes | Docker
