@@ -19,7 +19,6 @@ spec:
   # Selector to match pods
   selector:
     app: python-app
-    version: v1
   
   # Service ports
   ports:
