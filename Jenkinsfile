@@ -113,61 +113,61 @@ pipeline {
                         echo "✓ Switched to project: ${OPENSHIFT_PROJECT}"
                     """
                     
-                    // Clean up any existing resources
-                    echo "Cleaning up existing resources..."
+                    echo "Building image from Dockerfile using oc new-app from Git..."
                     sh """
+                        # Clean up existing resources
                         oc delete all -l app=${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
-                        oc delete bc ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
-                        oc delete is ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
-                        sleep 5
-                    """
-                    
-                    echo "Creating application with source-to-image build..."
-                    sh """
-                        oc new-app \
+                        sleep 3
+                        
+                        # Create app from Git repository (this handles the build properly)
+                        oc new-app ${GIT_REPO} \
                             --name=${APP_NAME} \
                             --strategy=docker \
-                            --binary=true \
-                            -n ${OPENSHIFT_PROJECT}
+                            -n ${OPENSHIFT_PROJECT} || true
+                        
+                        # Wait for build to start
+                        sleep 10
+                        
+                        # Follow the build logs
+                        oc logs -f bc/${APP_NAME} -n ${OPENSHIFT_PROJECT} || true
                     """
                     
-                    // Wait for resources to be created
-                    sh "sleep 10"
-                    
-                    echo "Starting binary build..."
-                    sh """
-                        oc start-build ${APP_NAME} \
-                            --from-dir=. \
-                            --follow \
-                            --wait \
-                            -n ${OPENSHIFT_PROJECT}
-                    """
-                    
-                    // Tag the image
-                    sh """
-                        oc tag ${APP_NAME}:latest ${APP_NAME}:${IMAGE_TAG} -n ${OPENSHIFT_PROJECT} || true
-                        oc tag ${APP_NAME}:latest ${APP_NAME}:stable -n ${OPENSHIFT_PROJECT} || true
-                    """
-                    
-                    echo "✓ Image built and tagged successfully"
+                    echo "✓ Image built successfully"
                 }
             }
         }
         
-        stage('Push to Registry') {
+        stage('Wait for Build') {
             steps {
                 script {
                     echo "=========================================="
-                    echo "Stage 3: Push Image to Registry"
+                    echo "Stage 3: Wait for Build Completion"
                     echo "=========================================="
                     
-                    // Verify image exists in ImageStream
-                    sh """
-                        oc get imagestream ${APP_NAME} -n ${OPENSHIFT_PROJECT}
-                        oc describe imagestream ${APP_NAME} -n ${OPENSHIFT_PROJECT}
-                    """
+                    // Wait for build to complete
+                    timeout(time: 10, unit: 'MINUTES') {
+                        sh """
+                            # Wait for the build to complete
+                            BUILD_NAME=\$(oc get builds -n ${OPENSHIFT_PROJECT} -l app=${APP_NAME} --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1:].metadata.name}')
+                            echo "Waiting for build: \$BUILD_NAME"
+                            
+                            # Wait for build completion
+                            oc wait --for=condition=Complete build/\$BUILD_NAME -n ${OPENSHIFT_PROJECT} --timeout=600s || \
+                            oc wait --for=condition=Failed build/\$BUILD_NAME -n ${OPENSHIFT_PROJECT} --timeout=10s
+                            
+                            # Check build status
+                            BUILD_STATUS=\$(oc get build \$BUILD_NAME -n ${OPENSHIFT_PROJECT} -o jsonpath='{.status.phase}')
+                            echo "Build status: \$BUILD_STATUS"
+                            
+                            if [ "\$BUILD_STATUS" != "Complete" ]; then
+                                echo "Build failed with status: \$BUILD_STATUS"
+                                oc logs build/\$BUILD_NAME -n ${OPENSHIFT_PROJECT}
+                                exit 1
+                            fi
+                        """
+                    }
                     
-                    echo "✓ Image available in OpenShift internal registry"
+                    echo "✓ Build completed successfully"
                 }
             }
         }
