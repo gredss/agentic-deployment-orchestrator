@@ -22,6 +22,12 @@ spec:
         app: python-app
         version: v1
     spec:
+      # OpenShift runs containers with random UIDs for security
+      # We need to ensure writable directories
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: python-app
         # Using a simple Python web server image
@@ -29,20 +35,39 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
           - |
-            pip install flask gunicorn &&
-            cat > /app/app.py << 'PYEOF'
+            # Create writable directories for OpenShift random UID
+            mkdir -p /tmp/app /tmp/.local /tmp/.cache &&
+            export HOME=/tmp &&
+            export PATH="/tmp/.local/bin:$PATH" &&
+            
+            # Install packages to /tmp/.local (writable location)
+            pip install --user flask gunicorn &&
+            
+            # Create Flask app in /tmp/app
+            cat > /tmp/app/app.py << 'PYEOF'
             from flask import Flask, jsonify
+            import os
+            
             app = Flask(__name__)
+            
             @app.route("/")
             def home():
-                return "Deployment successful"
+                return "Deployment successful! Running on OpenShift"
+            
             @app.route("/health")
             def health():
-                return jsonify({"status": "healthy"})
+                return jsonify({"status": "healthy", "pod": os.environ.get("HOSTNAME", "unknown")})
+            
+            @app.route("/ready")
+            def ready():
+                return jsonify({"status": "ready"})
+            
             if __name__ == "__main__":
                 app.run(host="0.0.0.0", port=8080)
             PYEOF
-            cd /app && gunicorn --bind 0.0.0.0:8080 --workers 2 app:app
+            
+            # Run gunicorn from /tmp/app
+            cd /tmp/app && exec gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 120 app:app
         ports:
         - containerPort: 8080
           name: http
