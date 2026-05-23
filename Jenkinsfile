@@ -113,53 +113,40 @@ pipeline {
                         echo "✓ Switched to project: ${OPENSHIFT_PROJECT}"
                     """
                     
-                    // Check if BuildConfig exists
-                    def bcExists = sh(
-                        script: "oc get bc ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null",
-                        returnStatus: true
-                    ) == 0
+                    // Clean up any existing broken resources
+                    echo "Cleaning up existing resources..."
+                    sh """
+                        oc delete bc ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
+                        oc delete is ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
+                        sleep 3
+                    """
                     
-                    if (bcExists) {
-                        echo "BuildConfig exists, starting new build..."
-                        
-                        // Start build from existing BuildConfig
-                        sh """
-                            oc start-build ${APP_NAME} \
-                                --from-dir=. \
-                                --follow \
-                                --wait \
-                                -n ${OPENSHIFT_PROJECT}
-                        """
-                    } else {
-                        echo "Creating new BuildConfig and starting build..."
-                        
-                        // Create ImageStream first
-                        sh """
-                            oc create imagestream ${APP_NAME} -n ${OPENSHIFT_PROJECT} || true
-                        """
-                        
-                        // Create BuildConfig with proper output reference
-                        sh """
-                            oc new-build \
-                                --name=${APP_NAME} \
-                                --binary=true \
-                                --strategy=docker \
-                                --to=${APP_NAME}:latest \
-                                -n ${OPENSHIFT_PROJECT} || true
-                        """
-                        
-                        // Wait a moment for BuildConfig to be ready
-                        sh "sleep 5"
-                        
-                        // Start build from current directory
-                        sh """
-                            oc start-build ${APP_NAME} \
-                                --from-dir=. \
-                                --follow \
-                                --wait \
-                                -n ${OPENSHIFT_PROJECT}
-                        """
-                    }
+                    echo "Creating ImageStream..."
+                    sh """
+                        oc create imagestream ${APP_NAME} -n ${OPENSHIFT_PROJECT}
+                    """
+                    
+                    echo "Creating BuildConfig..."
+                    sh """
+                        oc new-build \
+                            --name=${APP_NAME} \
+                            --binary=true \
+                            --strategy=docker \
+                            --to=${APP_NAME}:latest \
+                            -n ${OPENSHIFT_PROJECT}
+                    """
+                    
+                    // Wait for BuildConfig to be ready
+                    sh "sleep 5"
+                    
+                    echo "Starting build..."
+                    sh """
+                        oc start-build ${APP_NAME} \
+                            --from-dir=. \
+                            --follow \
+                            --wait \
+                            -n ${OPENSHIFT_PROJECT}
+                    """
                     
                     // Tag the image
                     sh """
