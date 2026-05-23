@@ -52,9 +52,6 @@ pipeline {
         
         // Disable concurrent builds
         disableConcurrentBuilds()
-        
-        // Timestamps in console output
-        timestamps()
     }
     
     // Pipeline stages
