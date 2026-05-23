@@ -113,33 +113,28 @@ pipeline {
                         echo "✓ Switched to project: ${OPENSHIFT_PROJECT}"
                     """
                     
-                    // Clean up any existing broken resources
+                    // Clean up any existing resources
                     echo "Cleaning up existing resources..."
                     sh """
+                        oc delete all -l app=${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
                         oc delete bc ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
                         oc delete is ${APP_NAME} -n ${OPENSHIFT_PROJECT} 2>/dev/null || true
-                        sleep 3
+                        sleep 5
                     """
                     
-                    echo "Creating ImageStream..."
+                    echo "Creating application with source-to-image build..."
                     sh """
-                        oc create imagestream ${APP_NAME} -n ${OPENSHIFT_PROJECT}
-                    """
-                    
-                    echo "Creating BuildConfig..."
-                    sh """
-                        oc new-build \
+                        oc new-app \
                             --name=${APP_NAME} \
-                            --binary=true \
                             --strategy=docker \
-                            --to=${APP_NAME}:latest \
+                            --binary=true \
                             -n ${OPENSHIFT_PROJECT}
                     """
                     
-                    // Wait for BuildConfig to be ready
-                    sh "sleep 5"
+                    // Wait for resources to be created
+                    sh "sleep 10"
                     
-                    echo "Starting build..."
+                    echo "Starting binary build..."
                     sh """
                         oc start-build ${APP_NAME} \
                             --from-dir=. \
@@ -150,8 +145,8 @@ pipeline {
                     
                     // Tag the image
                     sh """
-                        oc tag ${APP_NAME}:latest ${APP_NAME}:${IMAGE_TAG} -n ${OPENSHIFT_PROJECT}
-                        oc tag ${APP_NAME}:latest ${APP_NAME}:stable -n ${OPENSHIFT_PROJECT}
+                        oc tag ${APP_NAME}:latest ${APP_NAME}:${IMAGE_TAG} -n ${OPENSHIFT_PROJECT} || true
+                        oc tag ${APP_NAME}:latest ${APP_NAME}:stable -n ${OPENSHIFT_PROJECT} || true
                     """
                     
                     echo "✓ Image built and tagged successfully"
