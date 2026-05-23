@@ -100,11 +100,11 @@ pipeline {
             }
         }
         
-        stage('Prepare Deployment') {
+        stage('Deploy to OpenShift') {
             steps {
                 script {
                     echo "=========================================="
-                    echo "Stage 2: Prepare Deployment (No Build - Registry Unavailable)"
+                    echo "Stage 2: Deploy to OpenShift (No Build Required)"
                     echo "=========================================="
                     
                     // Switch to production namespace
@@ -113,90 +113,24 @@ pipeline {
                         echo "✓ Switched to project: ${OPENSHIFT_PROJECT}"
                     """
                     
-                    // Update deployment manifest to use public image
-                    echo "Updating deployment to use pre-built public image..."
+                    echo "Applying ConfigMap (production only)..."
                     sh """
-                        # Create a temporary deployment file using python:3.9-slim as base
-                        cat > /tmp/deployment-temp.yaml <<'EOF'
-apiVersion: apps/v1
-kind: Deployment
+                        oc apply -f - <<EOF
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: ${APP_NAME}
-  namespace: ${OPENSHIFT_PROJECT}
-  labels:
-    app: ${APP_NAME}
-    version: v1
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: ${APP_NAME}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  template:
-    metadata:
-      labels:
-        app: ${APP_NAME}
-        version: v1
-    spec:
-      containers:
-      - name: ${APP_NAME}
-        image: python:3.9-slim
-        command: ["/bin/sh"]
-        args: ["-c", "pip install flask gunicorn && echo 'from flask import Flask, jsonify\napp = Flask(__name__)\n@app.route(\"/\")\ndef home():\n    return \"Deployment successful\"\n@app.route(\"/health\")\ndef health():\n    return jsonify({\"status\": \"healthy\"})\nif __name__ == \"__main__\":\n    app.run(host=\"0.0.0.0\", port=8080)' > app.py && gunicorn --bind 0.0.0.0:8080 --workers 2 app:app"]
-        ports:
-        - containerPort: 8080
-          name: http
-        env:
-        - name: APP_VERSION
-          value: "${APP_VERSION}"
-        - name: ENVIRONMENT
-          value: "production"
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
-          requests:
-            cpu: "250m"
-            memory: "256Mi"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8080
-          initialDelaySeconds: 10
-          periodSeconds: 5
+  name: python-app-config
+  namespace: production
+data:
+  APP_VERSION: "1.0.0"
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
 EOF
                     """
                     
-                    echo "✓ Deployment configuration prepared"
-                }
-            }
-        }
-        
-        stage('Deploy to OpenShift') {
-            steps {
-                script {
-                    echo "=========================================="
-                    echo "Stage 3: Deploy to OpenShift"
-                    echo "=========================================="
-                    
-                    echo "Applying ConfigMap and Secret..."
+                    echo "Deploying application..."
                     sh """
-                        oc apply -f k8s/02-configmap-secret.yaml -n ${OPENSHIFT_PROJECT} || true
-                    """
-                    
-                    echo "Deploying application using temporary manifest..."
-                    sh """
-                        oc apply -f /tmp/deployment-temp.yaml -n ${OPENSHIFT_PROJECT}
+                        oc apply -f k8s/03-deployment-simple.yaml -n ${OPENSHIFT_PROJECT}
                     """
                     
                     echo "Applying Service..."
@@ -218,15 +152,15 @@ EOF
             steps {
                 script {
                     echo "=========================================="
-                    echo "Stage 4: Wait for Deployment Rollout"
+                    echo "Stage 3: Wait for Deployment Rollout"
                     echo "=========================================="
                     
-                    // Wait for rollout to complete
-                    timeout(time: 10, unit: 'MINUTES') {
+                    // Wait for rollout to complete (longer timeout for image pull + pip install)
+                    timeout(time: 15, unit: 'MINUTES') {
                         sh """
                             oc rollout status deployment/${APP_NAME} \
                                 -n ${OPENSHIFT_PROJECT} \
-                                --timeout=10m
+                                --timeout=15m
                         """
                     }
                     
@@ -239,7 +173,7 @@ EOF
             steps {
                 script {
                     echo "=========================================="
-                    echo "Stage 5: Verify Deployment Health"
+                    echo "Stage 4: Verify Deployment Health"
                     echo "=========================================="
                     
                     // Get pod status
@@ -308,7 +242,7 @@ EOF
             steps {
                 script {
                     echo "=========================================="
-                    echo "Stage 6: Deployment Information"
+                    echo "Stage 5: Deployment Information"
                     echo "=========================================="
                     
                     def routeUrl = sh(
