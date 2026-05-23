@@ -82,8 +82,8 @@ pipeline {
                     echo "Stage 1: Checkout Source Code"
                     echo "=========================================="
                     
-                    // Clean workspace
-                    cleanWs()
+                    // Clean workspace using deleteDir
+                    deleteDir()
                     
                     // Checkout code from Git
                     checkout([
