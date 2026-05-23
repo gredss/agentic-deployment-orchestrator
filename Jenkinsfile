@@ -133,15 +133,26 @@ pipeline {
                     } else {
                         echo "Creating new BuildConfig and starting build..."
                         
-                        // Create new app with binary build
+                        // Create ImageStream first
+                        sh """
+                            oc create imagestream ${APP_NAME} -n ${OPENSHIFT_PROJECT} || true
+                        """
+                        
+                        // Create BuildConfig with proper output reference
                         sh """
                             oc new-build \
                                 --name=${APP_NAME} \
                                 --binary=true \
                                 --strategy=docker \
+                                --to=${APP_NAME}:latest \
                                 -n ${OPENSHIFT_PROJECT} || true
-                            
-                            # Start build from current directory
+                        """
+                        
+                        // Wait a moment for BuildConfig to be ready
+                        sh "sleep 5"
+                        
+                        // Start build from current directory
+                        sh """
                             oc start-build ${APP_NAME} \
                                 --from-dir=. \
                                 --follow \
