@@ -1,0 +1,211 @@
+// Auto-generated Jenkinsfile by Bob
+pipeline {
+    agent any
+    
+    environment {
+        APP_NAME = '{{APP_NAME}}'
+        NAMESPACE = '{{OPENSHIFT_NAMESPACE}}'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        HEALTH_CHECK_PATH = '{{HEALTH_CHECK_PATH}}'
+    }
+    
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    echo "Starting deployment for ${APP_NAME}"
+                    echo "Namespace: ${NAMESPACE}"
+                    echo "Build: ${BUILD_NUMBER}"
+                }
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    echo "Code checked out successfully"
+                }
+            }
+        }
+        
+        stage('Build Image') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject("${NAMESPACE}") {
+                            echo "Checking build strategy..."
+                            
+                            // Check if BuildConfig exists
+                            def buildSelector = openshift.selector("bc", "${APP_NAME}")
+                            
+                            if (!buildSelector.exists()) {
+                                echo "⚠ BuildConfig '${APP_NAME}' not found - skipping build"
+                                echo "Will deploy using pre-built image from registry"
+                            } else {
+                                try {
+                                    echo "Starting build from BuildConfig..."
+                                    
+                                    // Start build asynchronously (no --wait)
+                                    def build = buildSelector.startBuild("--from-dir=.")
+                                    def buildName = build.object().metadata.name
+                                    
+                                    echo "Build started: ${buildName}"
+                                    echo "Monitoring build progress..."
+                                    
+                                    // Monitor build with shorter timeout
+                                    timeout(time: 5, unit: 'MINUTES') {
+                                        build.watch {
+                                            def phase = it.object().status.phase
+                                            echo "Build ${buildName} status: ${phase}"
+                                            
+                                            if (phase == "Complete") {
+                                                echo "✓ Build completed successfully!"
+                                                return true
+                                            } else if (phase == "Failed" || phase == "Error" || phase == "Cancelled") {
+                                                echo "✗ Build failed with status: ${phase}"
+                                                echo "Will proceed with deployment using existing image"
+                                                return true
+                                            }
+                                            
+                                            // Continue watching
+                                            return false
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    echo "⚠ Build timed out or failed: ${e.message}"
+                                    echo "Proceeding with deployment using pre-built image from Docker Hub"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject("${NAMESPACE}") {
+                            echo "Deploying application..."
+                            
+                            // Check if deployment exists
+                            def dcExists = openshift.selector("dc", "${APP_NAME}").exists()
+                            
+                            if (!dcExists) {
+                                echo "Creating new deployment..."
+                                // Apply deployment manifests
+                                openshift.apply(readFile('k8s/deployment.yaml'))
+                                openshift.apply(readFile('k8s/service.yaml'))
+                                openshift.apply(readFile('k8s/route.yaml'))
+                            } else {
+                                echo "Updating existing deployment..."
+                                // Trigger rollout
+                                openshift.selector("dc", "${APP_NAME}").rollout().latest()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Wait for Rollout') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject("${NAMESPACE}") {
+                            echo "Waiting for rollout to complete..."
+                            
+                            // Wait for deployment to be ready
+                            def deployment = openshift.selector("deployment", "${APP_NAME}")
+                            
+                            timeout(time: 10, unit: 'MINUTES') {
+                                deployment.rollout().status()
+                            }
+                            
+                            echo "Rollout completed successfully"
+                        }
+                    }
+                }
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject("${NAMESPACE}") {
+                            echo "Performing health check..."
+                            
+                            // Get route URL
+                            def route = openshift.selector("route", "${APP_NAME}").object()
+                            def appUrl = "https://${route.spec.host}${HEALTH_CHECK_PATH}"
+                            
+                            echo "Health check URL: ${appUrl}"
+                            
+                            // Wait for health check to pass
+                            timeout(time: 5, unit: 'MINUTES') {
+                                waitUntil {
+                                    script {
+                                        try {
+                                            def response = sh(
+                                                script: "curl -s -o /dev/null -w '%{http_code}' ${appUrl}",
+                                                returnStdout: true
+                                            ).trim()
+                                            
+                                            echo "Health check response: ${response}"
+                                            return response == '200'
+                                        } catch (Exception e) {
+                                            echo "Health check failed: ${e.message}"
+                                            return false
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            echo "Health check passed!"
+                            echo "Application is live at: https://${route.spec.host}"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            script {
+                openshift.withCluster() {
+                    openshift.withProject("${NAMESPACE}") {
+                        def route = openshift.selector("route", "${APP_NAME}").object()
+                        def appUrl = "https://${route.spec.host}"
+                        
+                        echo "=========================================="
+                        echo "Deployment Successful!"
+                        echo "Application: ${APP_NAME}"
+                        echo "Namespace: ${NAMESPACE}"
+                        echo "URL: ${appUrl}"
+                        echo "Health Check: ${appUrl}${HEALTH_CHECK_PATH}"
+                        echo "=========================================="
+                    }
+                }
+            }
+        }
+        
+        failure {
+            echo "=========================================="
+            echo "Deployment Failed!"
+            echo "Application: ${APP_NAME}"
+            echo "Namespace: ${NAMESPACE}"
+            echo "Build: ${BUILD_NUMBER}"
+            echo "=========================================="
+        }
+        
+        always {
+            echo "Pipeline execution completed"
+        }
+    }
+}
+
+// Made with Bob
