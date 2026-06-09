@@ -185,7 +185,3 @@ oc edit secret bob-secrets -n production
 - [Kubernetes Secrets Documentation](https://kubernetes.io/docs/concepts/configuration/secret/)
 - [OpenShift Secrets Guide](https://docs.openshift.com/container-platform/latest/nodes/pods/nodes-pods-secrets.html)
 - [Jenkins API Token](https://www.jenkins.io/doc/book/system-administration/authenticating-scripted-clients/)
-
----
-
-**Made with Bob** 🤖
