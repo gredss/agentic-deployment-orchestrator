@@ -450,7 +450,3 @@ Built with:
 - OpenShift container platform
 - Jenkins CI/CD
 - Kubernetes orchestration
-
----
-
-Made with Bob
