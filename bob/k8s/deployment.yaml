@@ -15,89 +15,40 @@ spec:
       labels:
         app: bob-orchestrator
     spec:
+      serviceAccountName: jenkins-sa
       containers:
       - name: bob-orchestrator
         image: python:3.9-slim
-        command: ["/bin/bash", "-c"]
+        command: ["/bin/sh", "-c"]
         args:
           - |
-            mkdir -p /tmp/app /tmp/.local /tmp/.cache &&
-            export HOME=/tmp &&
-            export PATH="/tmp/.local/bin:$PATH" &&
-            pip install --user flask requests gunicorn &&
-            cat > /tmp/app/orchestrator.py << 'EOF'
-            from flask import Flask, request, jsonify
-            import requests
-            import os
-            import logging
-
-            app = Flask(__name__)
-            logging.basicConfig(level=logging.INFO)
-            logger = logging.getLogger(__name__)
-
-            JENKINS_URL = os.getenv('JENKINS_URL')
-            JENKINS_USER = os.getenv('JENKINS_USER')
-            JENKINS_TOKEN = os.getenv('JENKINS_TOKEN')
-            JENKINS_JOB = os.getenv('JENKINS_JOB')
-
-            @app.route('/health', methods=['GET'])
-            def health():
-                return jsonify({"status": "healthy", "service": "bob-orchestrator"})
-
-            @app.route('/webhook', methods=['POST'])
-            def webhook():
-                data = request.json
-                text = data.get('text', '').lower()
-                
-                if 'deploy' in text and 'production' in text:
-                    result = trigger_jenkins_deployment()
-                    return jsonify(result)
-                
-                return jsonify({"status": "ignored", "message": "No deployment command detected"})
-
-            def trigger_jenkins_deployment():
-                try:
-                    url = f"{JENKINS_URL}/job/{JENKINS_JOB}/build"
-                    auth = (JENKINS_USER, JENKINS_TOKEN)
-                    
-                    logger.info(f"Triggering Jenkins job: {JENKINS_JOB}")
-                    response = requests.post(url, auth=auth, verify=False)
-                    
-                    if response.status_code in [200, 201]:
-                        return {
-                            "status": "success",
-                            "message": f"Deployment triggered for {JENKINS_JOB}",
-                            "jenkins_url": f"{JENKINS_URL}/job/{JENKINS_JOB}"
-                        }
-                    else:
-                        return {
-                            "status": "error",
-                            "message": f"Jenkins returned {response.status_code}",
-                            "details": response.text
-                        }
-                except Exception as e:
-                    logger.error(f"Error triggering Jenkins: {str(e)}")
-                    return {"status": "error", "message": str(e)}
-
-            if __name__ == '__main__':
-                app.run(host='0.0.0.0', port=5000)
-            EOF
-            cd /tmp/app && exec gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 orchestrator:app
+            mkdir -p /tmp/.local && \
+            export HOME=/tmp && \
+            export PATH=/tmp/.local/bin:$PATH && \
+            pip install --user --no-cache-dir Flask==3.0.0 requests==2.31.0 gunicorn==21.2.0 kubernetes==28.1.0 && \
+            cd /app && \
+            /tmp/.local/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 orchestrator:app
+        volumeMounts:
+        - name: app-code
+          mountPath: /app
         ports:
         - containerPort: 5000
           name: http
         env:
-        - name: JENKINS_URL
-          value: "https://jenkins-production.apps.itz-gkg33y.infra01-lb.tok04.techzone.ibm.com"
-        - name: JENKINS_USER
-          value: "admin"
-        - name: JENKINS_TOKEN
+        # OpenShift API Configuration
+        - name: OPENSHIFT_API_URL
+          value: "https://kubernetes.default.svc"
+        - name: OPENSHIFT_TOKEN
           valueFrom:
             secretKeyRef:
               name: bob-secrets
-              key: jenkins-token
-        - name: JENKINS_JOB
-          value: "python-app-deployment"
+              key: openshift-token
+        - name: OPENSHIFT_NAMESPACE
+          value: "production"
+        - name: DEFAULT_DEPLOY_ENV
+          value: "production"
+        - name: REQUEST_TIMEOUT
+          value: "30"
         resources:
           limits:
             cpu: "500m"
@@ -117,5 +68,9 @@ spec:
             port: 5000
           initialDelaySeconds: 15
           periodSeconds: 5
+      volumes:
+      - name: app-code
+        configMap:
+          name: bob-orchestrator-code-v2
 
 # Made with Bob

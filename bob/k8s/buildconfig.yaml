@@ -1,0 +1,59 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: bob-orchestrator
+  namespace: production
+  labels:
+    app: bob-orchestrator
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: bob-orchestrator:latest
+  source:
+    type: Git
+    git:
+      uri: https://github.com/gredss/agentic-deployment-orchestrator
+      ref: main
+    contextDir: bob
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: bob-orchestrator
+  namespace: production
+  labels:
+    app: bob-orchestrator
+spec:
+  lookupPolicy:
+    local: false
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: bob-automation-pipeline
+  namespace: production
+  labels:
+    app: bob-automation
+    type: pipeline
+spec:
+  strategy:
+    type: JenkinsPipeline
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: Jenkinsfile
+  source:
+    type: Git
+    git:
+      uri: https://github.com/gredss/agentic-deployment-orchestrator
+      ref: main
+  triggers:
+    - type: ConfigChange
+
+# Made with Bob

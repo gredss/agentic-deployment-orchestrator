@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bob Deployment Generator - Deploy to OpenShift</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>🚀 Bob Deployment Generator</h1>
+                <p>Deploy your Python app to OpenShift in 3 clicks!</p>
+            </div>
+        </header>
+
+        <!-- Main Form -->
+        <main class="main-content">
+            <form id="deploymentForm" enctype="multipart/form-data">
+                
+                <!-- Application Details Section -->
+                <section class="form-section">
+                    <h2>📝 Application Details</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="app_name">App Name *</label>
+                            <input type="text" id="app_name" name="app_name" 
+                                   placeholder="my-awesome-app" 
+                                   pattern="[a-z0-9-]+" 
+                                   title="Lowercase letters, numbers, and hyphens only"
+                                   required>
+                            <small>Lowercase letters, numbers, and hyphens only</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="app_port">App Port *</label>
+                            <input type="number" id="app_port" name="app_port" 
+                                   placeholder="5000" 
+                                   min="1" max="65535" 
+                                   value="5000"
+                                   required>
+                            <small>Port your app listens on (1-65535)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="health_check_path">Health Check Endpoint</label>
+                            <input type="text" id="health_check_path" name="health_check_path" 
+                                   placeholder="/health" 
+                                   value="/health">
+                            <small>Health check endpoint path</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="replicas">Replicas</label>
+                            <input type="number" id="replicas" name="replicas" 
+                                   placeholder="2" 
+                                   min="1" max="10" 
+                                   value="2">
+                            <small>Number of pod replicas (1-10)</small>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- GitHub Repository Section -->
+                <section class="form-section">
+                    <h2>🔗 GitHub Repository</h2>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="github_repo">Repository URL *</label>
+                            <input type="url" id="github_repo" name="github_repo" 
+                                   placeholder="https://github.com/username/repo.git" 
+                                   required>
+                            <small>Full GitHub repository URL</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="github_branch">Branch</label>
+                            <input type="text" id="github_branch" name="github_branch" 
+                                   placeholder="main" 
+                                   value="main">
+                            <small>Git branch to use</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="github_token">GitHub Token *</label>
+                            <input type="password" id="github_token" name="github_token" 
+                                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" 
+                                   required>
+                            <small>Personal access token with repo permissions</small>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- OpenShift Configuration Section -->
+                <section class="form-section">
+                    <h2>☁️ OpenShift Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="openshift_namespace">Namespace *</label>
+                            <input type="text" id="openshift_namespace" name="openshift_namespace" 
+                                   placeholder="production" 
+                                   required>
+                            <small>OpenShift namespace/project</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="openshift_cluster">Cluster Domain *</label>
+                            <input type="text" id="openshift_cluster" name="openshift_cluster" 
+                                   placeholder="apps.my-cluster.com" 
+                                   required>
+                            <small>OpenShift cluster domain (without https://)</small>
+                        </div>
+                    </div>
+                <!-- Docker Hub Configuration Section -->
+                <section class="form-section">
+                    <h2>🐳 Docker Hub Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="docker_username">Docker Hub Username *</label>
+                            <input type="text" id="docker_username" name="docker_username" 
+                                   placeholder="yourusername" 
+                                   required>
+                            <small>Your Docker Hub username</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="docker_password">Docker Hub Password/Token *</label>
+                            <input type="password" id="docker_password" name="docker_password" 
+                                   placeholder="dckr_pat_xxxxxxxxxxxx" 
+                                   required>
+                            <small>Docker Hub password or access token</small>
+                        </div>
+                    </div>
+                </section>
+
+                </section>
+
+                <!-- Python Configuration Section -->
+                <section class="form-section">
+                    <h2>🐍 Python Configuration</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="python_version">Python Version</label>
+                            <select id="python_version" name="python_version">
+                                <option value="3.11" selected>Python 3.11</option>
+                                <option value="3.10">Python 3.10</option>
+                                <option value="3.9">Python 3.9</option>
+                                <option value="3.12">Python 3.12</option>
+                            </select>
+                            <small>Python runtime version</small>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- File Upload Section -->
+                <section class="form-section">
+                    <h2>📤 Upload Your Application</h2>
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="app_py" name="app_py" accept=".py" hidden>
+                        <div class="upload-content">
+                            <div class="upload-icon">📄</div>
+                            <p class="upload-text">Drag & drop your <strong>app.py</strong> here</p>
+                            <p class="upload-subtext">or click to browse</p>
+                            <button type="button" class="btn-secondary" id="browseBtn">Choose File</button>
+                        </div>
+                        <div class="upload-success" id="uploadSuccess" style="display: none;">
+                            <div class="success-icon">✓</div>
+                            <p class="success-text">File uploaded: <span id="fileName"></span></p>
+                            <p class="success-size">Size: <span id="fileSize"></span></p>
+                            <button type="button" class="btn-link" id="changeFileBtn">Change File</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary" id="deployBtn">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">Deploy Now</span>
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Initializing deployment...</p>
+                </div>
+            </form>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Bob 🤖 | OpenShift Deployment Automation</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

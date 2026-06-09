@@ -1,0 +1,22 @@
+# Bob Web UI - Route Manifest
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: bob-web-ui
+  namespace: production
+  labels:
+    app: bob-web-ui
+    component: frontend
+spec:
+  to:
+    kind: Service
+    name: bob-web-ui
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+# Made with Bob

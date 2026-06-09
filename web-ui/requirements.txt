@@ -1,0 +1,9 @@
+Flask==3.0.0
+flask-socketio==5.3.5
+PyGithub==2.1.1
+requests==2.31.0
+PyYAML==6.0.1
+python-dotenv==1.0.0
+werkzeug==3.0.1
+gunicorn==21.2.0
+eventlet==0.33.3

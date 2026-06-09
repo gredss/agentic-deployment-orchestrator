@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {APP_NAME}
+  namespace: {NAMESPACE}
+  labels:
+    app: {APP_NAME}
+    managed-by: bob-orchestrator
+spec:
+  replicas: {REPLICAS}
+  selector:
+    matchLabels:
+      app: {APP_NAME}
+  template:
+    metadata:
+      labels:
+        app: {APP_NAME}
+    spec:
+      containers:
+      - name: {APP_NAME}
+        image: {IMAGE}
+        ports:
+        - containerPort: {PORT}
+          name: http
+        env:
+        - name: APP_NAME
+          value: "{APP_NAME}"
+        - name: ENVIRONMENT
+          value: "{NAMESPACE}"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: {PORT}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: {PORT}
+          initialDelaySeconds: 15
+          periodSeconds: 5
+
+# Parameterized Deployment Template
+# Managed by Bob Orchestrator
+
+# Made with Bob

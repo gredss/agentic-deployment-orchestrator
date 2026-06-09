@@ -1,0 +1,50 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{APP_NAME}}-pipeline
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+    type: pipeline
+spec:
+  strategy:
+    type: JenkinsPipeline
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: Jenkinsfile
+  source:
+    type: Git
+    git:
+      uri: {{GITHUB_REPO}}
+      ref: {{GITHUB_BRANCH}}
+  triggers:
+    - type: ConfigChange
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{APP_NAME}}
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: {{APP_NAME}}:latest
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{APP_NAME}}
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+spec:
+  lookupPolicy:
+    local: false

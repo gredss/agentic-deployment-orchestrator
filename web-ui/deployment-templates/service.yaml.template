@@ -1,0 +1,19 @@
+# Auto-generated Service by Bob
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{APP_NAME}}
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+    generated-by: bob
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{APP_PORT}}
+    targetPort: {{APP_PORT}}
+    protocol: TCP
+    name: http
+  selector:
+    app: {{APP_NAME}}
+  sessionAffinity: None

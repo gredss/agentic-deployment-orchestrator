@@ -1,0 +1,64 @@
+# Bob Web UI - Deployment Manifest
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bob-web-ui
+  namespace: production
+  labels:
+    app: bob-web-ui
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bob-web-ui
+  template:
+    metadata:
+      labels:
+        app: bob-web-ui
+        component: frontend
+    spec:
+      serviceAccountName: jenkins-sa
+      containers:
+      - name: bob-web-ui
+        image: image-registry.openshift-image-registry.svc:5000/production/bob-web-ui:latest
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8080"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: bob-web-ui-secret
+              key: secret-key
+        - name: OPENSHIFT_API_URL
+          value: "https://kubernetes.default.svc"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        imagePullPolicy: Always
+      restartPolicy: Always
+
+# Made with Bob

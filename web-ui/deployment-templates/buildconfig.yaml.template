@@ -1,0 +1,53 @@
+# Auto-generated BuildConfig by Bob
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{APP_NAME}}-pipeline
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+    generated-by: bob
+spec:
+  strategy:
+    type: JenkinsPipeline
+    jenkinsPipelineStrategy:
+      jenkinsfilePath: Jenkinsfile
+  source:
+    type: Git
+    git:
+      uri: {{GITHUB_REPO}}
+      ref: {{GITHUB_BRANCH}}
+  triggers:
+    - type: ConfigChange
+    - type: GitHub
+      github:
+        secret: bob-webhook-secret
+
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{APP_NAME}}
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+    generated-by: bob
+spec:
+  output:
+    to:
+      kind: DockerImage
+      name: docker.io/{{DOCKER_USERNAME}}/{{APP_NAME}}:latest
+    pushSecret:
+      name: dockerhub-secret
+  source:
+    type: Git
+    git:
+      uri: {{GITHUB_REPO}}
+      ref: {{GITHUB_BRANCH}}
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+  triggers:
+    - type: ConfigChange

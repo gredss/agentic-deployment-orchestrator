@@ -1,0 +1,21 @@
+# Bob Web UI - Service Manifest
+apiVersion: v1
+kind: Service
+metadata:
+  name: bob-web-ui
+  namespace: production
+  labels:
+    app: bob-web-ui
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: bob-web-ui
+  sessionAffinity: None
+
+# Made with Bob

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Status - Bob</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>🚀 Bob Deployment Generator</h1>
+                <p>Deployment Status</p>
+            </div>
+        </header>
+
+        <!-- Status Content -->
+        <main class="status-content">
+            <!-- Deployment Info -->
+            <section class="status-header">
+                <h2>Deployment Progress</h2>
+                <p class="deployment-id">ID: <span id="deploymentId">{{ deployment_id }}</span></p>
+            </section>
+
+            <!-- Progress Bar -->
+            <section class="progress-section">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+                <p class="progress-text" id="progressText">0%</p>
+            </section>
+
+            <!-- Status Steps -->
+            <section class="status-steps">
+                <div class="step" id="step-analyzing">
+                    <div class="step-icon">⏳</div>
+                    <div class="step-content">
+                        <h3>Analyzing app.py</h3>
+                        <p>Detecting dependencies and requirements</p>
+                    </div>
+                    <div class="step-status">⏳</div>
+                </div>
+
+                <div class="step" id="step-generating">
+                    <div class="step-icon">⏳</div>
+                    <div class="step-content">
+                        <h3>Generating deployment files</h3>
+                        <p>Creating Dockerfile, Jenkinsfile, and K8s manifests</p>
+                    </div>
+                    <div class="step-status">⏳</div>
+                </div>
+
+                <div class="step" id="step-committing">
+                    <div class="step-icon">⏳</div>
+                    <div class="step-content">
+                        <h3>Committing to GitHub</h3>
+                        <p>Pushing files to repository</p>
+                    </div>
+                    <div class="step-status">⏳</div>
+                </div>
+
+                <div class="step" id="step-configuring">
+                    <div class="step-icon">⏳</div>
+                    <div class="step-content">
+                        <h3>Applying BuildConfig</h3>
+                        <p>Configuring OpenShift build pipeline</p>
+                    </div>
+                    <div class="step-status">⏳</div>
+                </div>
+
+                <div class="step" id="step-building">
+                    <div class="step-icon">⏳</div>
+                    <div class="step-content">
+                        <h3>Building Docker image</h3>
+                        <p>Jenkins is building your application</p>
+                    </div>
+                    <div class="step-status">⏳</div>
+                </div>
+
+                <div class="step" id="step-deploying">
+                    <div class="step-icon">⏳</div>
+                    <div class="step-content">
+                        <h3>Deploying to OpenShift</h3>
+                        <p>Rolling out pods and waiting for health checks</p>
+                    </div>
+                    <div class="step-status">⏳</div>
+                </div>
+            </section>
+
+            <!-- Live Logs -->
+            <section class="logs-section">
+                <h3>📋 Live Logs</h3>
+                <div class="logs-container" id="logsContainer">
+                    <div class="log-entry">
+                        <span class="log-time">--:--:--</span>
+                        <span class="log-message">Waiting for deployment to start...</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Success/Error Message -->
+            <section class="result-section" id="resultSection" style="display: none;">
+                <div class="result-card" id="resultCard">
+                    <div class="result-icon" id="resultIcon">🎉</div>
+                    <h2 id="resultTitle">Deployment Complete!</h2>
+                    <p id="resultMessage">Your application is now live and accessible.</p>
+                    
+                    <div class="result-details" id="resultDetails" style="display: none;">
+                        <div class="detail-item">
+                            <strong>Application URL:</strong>
+                            <a href="#" id="appUrl" target="_blank" class="app-url">Loading...</a>
+                            <button class="btn-copy" id="copyUrlBtn" title="Copy URL">📋</button>
+                        </div>
+                        <div class="detail-item">
+                            <strong>Health Check:</strong>
+                            <a href="#" id="healthUrl" target="_blank" class="app-url">Loading...</a>
+                        </div>
+                    </div>
+
+                    <div class="result-actions">
+                        <a href="/" class="btn-primary">Deploy Another App</a>
+                        <button class="btn-secondary" id="viewLogsBtn">View Full Logs</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Bob 🤖 | OpenShift Deployment Automation</p>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const DEPLOYMENT_ID = "{{ deployment_id }}";
+    </script>
+    <script src="/static/js/deploy.js"></script>
+</body>
+</html>

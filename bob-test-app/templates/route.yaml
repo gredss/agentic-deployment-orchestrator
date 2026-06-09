@@ -1,0 +1,24 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {APP_NAME}
+  namespace: {NAMESPACE}
+  labels:
+    app: {APP_NAME}
+    managed-by: bob-orchestrator
+spec:
+  to:
+    kind: Service
+    name: {APP_NAME}
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+
+# Parameterized Route Template
+# Managed by Bob Orchestrator
+
+# Made with Bob

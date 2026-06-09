@@ -1,0 +1,21 @@
+# Auto-generated Route by Bob
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{APP_NAME}}
+  namespace: {{OPENSHIFT_NAMESPACE}}
+  labels:
+    app: {{APP_NAME}}
+    generated-by: bob
+spec:
+  host: {{APP_NAME}}-{{OPENSHIFT_NAMESPACE}}.{{OPENSHIFT_CLUSTER}}
+  to:
+    kind: Service
+    name: {{APP_NAME}}
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

@@ -90,6 +90,15 @@ oc-login.sh
 openshift-token.txt
 sa-token.txt
 
+# Kubernetes secret files (keep only .example templates)
+**/k8s/secret.yaml
+**/k8s/*-secret.yaml
+k8s/02-configmap-secret.yaml
+bob/k8s/secret.yaml
+web-ui/k8s/secret.yaml
+!**/*.example
+!**/*.template
+
 # Docker
 .dockerignore
 docker-compose.override.yml
