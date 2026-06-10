@@ -6,10 +6,10 @@ AI-driven CI/CD orchestration system for automated Python application deployment
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Deployment Methods                        │
+│                    Deployment Methods                       │
 ├─────────────────────────────────────────────────────────────┤
 │  1. Web UI          2. Bob Orchestrator    3. Templates     │
-│  (User-friendly)    (AI-driven)            (CLI-based)       │
+│  (User-friendly)    (AI-driven)            (CLI-based)      │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
